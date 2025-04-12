@@ -2,32 +2,27 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const authRoutes = require("./routes/authRoutes");
-const rateLimit = require("express-rate-limit");
-const cron = require("node-cron");
-const User = require("./models/User");
 
 dotenv.config();
-
 const app = express();
-app.use(cors());
+
+// Middleware
 app.use(express.json());
+app.use(cors());
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-});
-app.use(limiter);
-
-app.use("/api", authRoutes);
-
+// Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() =>
-    app.listen(5000, () => console.log("Server running on port 5000"))
-  )
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log(err));
 
-cron.schedule("0 */3 * * *", async () => {
-  await User.updateMany({}, { loginAttempts: 0, lastLoginAttempt: null });
+// Routes
+app.use("/api/auth", require("./routes/authRoutes"));
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
